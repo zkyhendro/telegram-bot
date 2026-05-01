@@ -11,7 +11,7 @@ from telegram.ext import (
 
 load_dotenv()
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+TELEGRAM_TOKEN = "8515585947:AAEoRMswbRCUqqoyuwx_QKeF_8-RenblRfA"
 REPLICATE_API_KEY = os.getenv("REPLICATE_API_KEY")
 
 if REPLICATE_API_KEY:
