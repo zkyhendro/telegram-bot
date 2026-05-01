@@ -1,0 +1,5 @@
+python-telegram-bot==20.7
+replicate
+google-generativeai
+aiohttp
+python-dotenv
