@@ -14,7 +14,8 @@ load_dotenv()
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 REPLICATE_API_KEY = os.getenv("REPLICATE_API_KEY")
 
-os.environ["REPLICATE_API_TOKEN"] = REPLICATE_API_KEY
+if REPLICATE_API_KEY:
+    os.environ["REPLICATE_API_TOKEN"] = REPLICATE_API_KEY
 
 user_mode = {}
 
