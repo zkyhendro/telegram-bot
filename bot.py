@@ -1,7 +1,6 @@
 import os
-import asyncio
 import aiohttp
-import replicate
+import asyncio
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -12,12 +11,20 @@ from telegram.ext import (
 load_dotenv()
 
 TELEGRAM_TOKEN = "8515585947:AAEoRMswbRCUqqoyuwx_QKeF_8-RenblRfA"
-REPLICATE_API_KEY = os.getenv("REPLICATE_API_KEY")
-
-if REPLICATE_API_KEY:
-    os.environ["REPLICATE_API_TOKEN"] = REPLICATE_API_KEY
+HF_API_KEY = os.getenv("HF_API_KEY")
 
 user_mode = {}
+
+async def generate_image_hf(prompt):
+    url = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+    headers = {"Authorization": f"Bearer {HF_API_KEY}"}
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json={"inputs": prompt}) as resp:
+            if resp.status == 200:
+                return await resp.read()
+            else:
+                text = await resp.text()
+                raise Exception(f"HF Error {resp.status}: {text}")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
@@ -27,7 +34,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
-        "Halo! Saya bot AI generator.\nPilih mode:",
+        "Halo! Saya bot AI generator.\nPilih mode yang kamu inginkan:",
         reply_markup=reply_markup
     )
 
@@ -41,7 +48,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "mode_i2i":
         await query.edit_message_text("🔄 Mode: Image to Image\nKirim foto + caption prompt.")
     elif query.data == "mode_i2v":
-        await query.edit_message_text("🎬 Mode: Image to Video\nKirim foto yang ingin dijadikan video.")
+        await query.edit_message_text("🎬 Mode: Image to Video\nFitur ini butuh Replicate. Pilih mode lain dulu.")
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.message.from_user.id
@@ -51,14 +58,10 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     if mode == "mode_t2i":
         prompt = update.message.text
-        msg = await update.message.reply_text("⏳ Generating image...")
+        msg = await update.message.reply_text("⏳ Generating image, mohon tunggu 30-60 detik...")
         try:
-            output = replicate.run(
-                "black-forest-labs/flux-schnell",
-                input={"prompt": prompt, "num_outputs": 1}
-            )
-            image_url = output[0] if isinstance(output, list) else str(output)
-            await update.message.reply_photo(photo=image_url, caption=f"✅ {prompt}")
+            image_bytes = await generate_image_hf(prompt)
+            await update.message.reply_photo(photo=image_bytes, caption=f"✅ {prompt}")
             await msg.delete()
         except Exception as e:
             await msg.edit_text(f"❌ Error: {str(e)}")
@@ -71,40 +74,17 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not mode:
         await update.message.reply_text("Pilih mode dulu dengan /start")
         return
-    photo = update.message.photo[-1]
-    file = await context.bot.get_file(photo.file_id)
-    file_url = file.file_path
     if mode == "mode_i2i":
-        prompt = update.message.caption or "enhance this image, same style"
-        msg = await update.message.reply_text("⏳ Processing image to image...")
+        prompt = update.message.caption or "enhance this image"
+        msg = await update.message.reply_text("⏳ Processing...")
         try:
-            output = replicate.run(
-                "black-forest-labs/flux-kontext-dev",
-                input={"prompt": prompt, "input_image": file_url}
-            )
-            image_url = output[0] if isinstance(output, list) else str(output)
-            await update.message.reply_photo(photo=image_url, caption=f"✅ {prompt}")
-            await msg.delete()
-        except Exception as e:
-            await msg.edit_text(f"❌ Error: {str(e)}")
-    elif mode == "mode_i2v":
-        msg = await update.message.reply_text("⏳ Converting to video (~1-2 menit)...")
-        try:
-            output = replicate.run(
-                "lightricks/ltx-video",
-                input={
-                    "image": file_url,
-                    "prompt": "animate this image naturally",
-                    "num_frames": 49
-                }
-            )
-            video_url = str(output)
-            await update.message.reply_video(video=video_url, caption="✅ Video siap!")
+            image_bytes = await generate_image_hf(prompt)
+            await update.message.reply_photo(photo=image_bytes, caption=f"✅ {prompt}")
             await msg.delete()
         except Exception as e:
             await msg.edit_text(f"❌ Error: {str(e)}")
     else:
-        await update.message.reply_text("Mode Text to Image tidak butuh foto.")
+        await update.message.reply_text("Mode ini tidak butuh foto.")
 
 def main():
     app = Application.builder().token(TELEGRAM_TOKEN).build()
