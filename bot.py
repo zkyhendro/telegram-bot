@@ -2,7 +2,6 @@ import os
 import asyncio
 import aiohttp
 import replicate
-import google.generativeai as genai
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -13,10 +12,8 @@ from telegram.ext import (
 load_dotenv()
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 REPLICATE_API_KEY = os.getenv("REPLICATE_API_KEY")
 
-genai.configure(api_key=GEMINI_API_KEY)
 os.environ["REPLICATE_API_TOKEN"] = REPLICATE_API_KEY
 
 user_mode = {}
