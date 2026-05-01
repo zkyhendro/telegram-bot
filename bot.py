@@ -16,7 +16,7 @@ HF_API_KEY = os.getenv("HF_API_KEY")
 user_mode = {}
 
 async def generate_image_hf(prompt):
-    url = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev"
+    url = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
     headers = {"Authorization": f"Bearer {HF_API_KEY}"}
     async with aiohttp.ClientSession() as session:
         async with session.post(url, headers=headers, json={"inputs": prompt}) as resp:
